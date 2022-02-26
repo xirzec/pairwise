@@ -146,16 +146,15 @@ export function* pairwise<Config extends ConfigurationMatrix>(
       let bestCandidate = candidates[0]!;
 
       const increment = function (param: string, value: unknown) {
-        candidates.some(function (candidate) {
-          if (candidate.param === param && candidate.value === value) {
-            candidate.score++;
-            if (candidate.score > bestCandidate.score) {
-              bestCandidate = candidate;
-            }
-            return true;
-          }
-          return false;
+        const candidate = candidates.find((c) => {
+          return c.param === param && c.value === value;
         });
+        if (candidate) {
+          candidate.score++;
+          if (candidate.score > bestCandidate.score) {
+            bestCandidate = candidate;
+          }
+        }
       };
 
       // find pairs that contain a parameter not in the solution
