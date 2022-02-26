@@ -1,0 +1,24 @@
+{
+  "name": "pairwise",
+  "version": "0.0.1",
+  "description": "A pairwise utility function for testing",
+  "main": "dist/pairwise.js",
+  "scripts": {
+    "clean": "rimraf ./dist",
+    "build": "tsc -p .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jeff Fisher <jeffish@microsoft.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.12.1",
+    "@typescript-eslint/parser": "^5.12.1",
+    "eslint": "^8.10.0",
+    "prettier": "^2.5.1",
+    "rimraf": "^3.0.2",
+    "typescript": "^4.5.5"
+  },
+  "dependencies": {
+    "tslib": "^2.3.1"
+  }
+}
