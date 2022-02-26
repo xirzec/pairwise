@@ -23,6 +23,54 @@ interface SolutionItemCandidate {
   score: number;
 }
 
+// generate value combinations of all input values for each pair
+function generateUncovered<Config extends ConfigurationMatrix>(
+  config: Config,
+  param1: string,
+  param2: string
+): UncoveredItem[] {
+  const param1Values = config[param1] ?? [];
+  const param2Values = config[param2] ?? [];
+  const result: UncoveredItem[] = [];
+
+  for (const value1 of param1Values) {
+    for (const value2 of param2Values) {
+      result.push({
+        value1,
+        value2,
+      });
+    }
+  }
+
+  return result;
+}
+
+// when adding solutions to the results, simply remove them
+// from pending combinations after all slots are covered
+function addSolution(
+  results: Array<Record<string, unknown>>,
+  combinations: Combination[],
+  solution: Record<string, unknown>
+): Combination[] {
+  const remainingCombinations = combinations.filter(function (combination) {
+    combination.uncovered = combination.uncovered.filter(function (uncovered) {
+      if (
+        solution[combination.param1] === uncovered.value1 &&
+        solution[combination.param2] === uncovered.value2
+      ) {
+        // remove combinations now covered
+        return false;
+      }
+      return true;
+    });
+
+    return combination.uncovered.length > 0;
+  });
+
+  results.push(solution);
+  return remainingCombinations;
+}
+
 // Useful for when you have a large number of configurations but don't want to
 // exhaustively test all unique combinations. This function takes an object that describes
 // all input parameters and their valid values, e.g.
@@ -33,64 +81,25 @@ interface SolutionItemCandidate {
 // The second argument provides an array of solutions that *must* be included in the output
 // more info: http://msdn.microsoft.com/en-us/library/cc150619.aspx
 export function pairwise<Config extends ConfigurationMatrix>(
-  inputs: Config,
+  config: Config,
   include?: Array<ResultConfiguration<Config>>
 ): Array<ResultConfiguration<Config>> {
   const results: Array<ResultConfiguration<Config>> = [];
-  const inputKeys = Object.keys(inputs);
+  const configKeys = Object.keys(config);
 
   let combinations: Combination[] = [];
 
-  // generate value combinations of all input values for each pair
-  function generateUncovered(param1: string, param2: string): UncoveredItem[] {
-    const param1Inputs = inputs[param1] ?? [];
-    const param2Inputs = inputs[param2] ?? [];
-    const result: UncoveredItem[] = [];
-
-    for (const value1 of param1Inputs) {
-      for (const value2 of param2Inputs) {
-        result.push({
-          value1,
-          value2,
-        });
-      }
-    }
-
-    return result;
-  }
-
-  // when adding solutions to the results, simply remove them
-  // from pending combinations after all slots are covered
-  function addSolution(solution: ResultConfiguration<Config>): void {
-    combinations = combinations.filter(function (combination) {
-      combination.uncovered = combination.uncovered.filter(function (uncovered) {
-        if (
-          solution[combination.param1] === uncovered.value1 &&
-          solution[combination.param2] === uncovered.value2
-        ) {
-          // remove combinations now covered
-          return false;
-        }
-        return true;
-      });
-
-      return combination.uncovered.length > 0;
-    });
-
-    results.push(solution);
-  }
-
-  for (let i = 0; i < inputKeys.length - 1; i++) {
-    for (let j = i + 1; j < inputKeys.length; j++) {
-      const param1 = inputKeys[i];
-      const param2 = inputKeys[j];
+  for (let i = 0; i < configKeys.length - 1; i++) {
+    for (let j = i + 1; j < configKeys.length; j++) {
+      const param1 = configKeys[i];
+      const param2 = configKeys[j];
       if (!param1 || !param2) {
         continue;
       }
       combinations.push({
         param1: param1,
         param2: param2,
-        uncovered: generateUncovered(param1, param2),
+        uncovered: generateUncovered(config, param1, param2),
       });
     }
   }
@@ -98,7 +107,7 @@ export function pairwise<Config extends ConfigurationMatrix>(
   // mark any solutions passed in as covered
   if (Array.isArray(include)) {
     for (const solution of include) {
-      addSolution(solution);
+      combinations = addSolution(results, combinations, solution);
     }
   }
 
@@ -123,13 +132,13 @@ export function pairwise<Config extends ConfigurationMatrix>(
 
     // while not all parameters are in the solution yet
     let solutionKeys = Object.keys(solution);
-    while (solutionKeys.length < inputKeys.length) {
+    while (solutionKeys.length < configKeys.length) {
       const candidates: SolutionItemCandidate[] = [];
 
       // any uncovered parameter is a candidate
-      for (const param of inputKeys) {
+      for (const param of configKeys) {
         if (!solutionKeys.includes(param)) {
-          for (const value of inputs[param]!) {
+          for (const value of config[param]!) {
             candidates.push({
               param,
               value,
@@ -180,7 +189,7 @@ export function pairwise<Config extends ConfigurationMatrix>(
     }
 
     // remove what is covered by the new solution
-    addSolution(solution as ResultConfiguration<Config>);
+    combinations = addSolution(results, combinations, solution);
   }
 
   return results;
