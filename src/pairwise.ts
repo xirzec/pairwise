@@ -42,30 +42,26 @@ export function pairwise<Config extends ConfigurationMatrix>(
   let combinations: Combination[] = [];
 
   // generate value combinations of all input values for each pair
-  function generateUncovered(param1: string, param2: string) {
-    const param1Inputs = inputs[param1];
-    const param2Inputs = inputs[param2];
+  function generateUncovered(param1: string, param2: string): UncoveredItem[] {
+    const param1Inputs = inputs[param1] ?? [];
+    const param2Inputs = inputs[param2] ?? [];
     const result: UncoveredItem[] = [];
 
-    if (!Array.isArray(param1Inputs) || !Array.isArray(param2Inputs)) {
-      return result;
-    }
-
-    param1Inputs.forEach(function (value1) {
-      param2Inputs.forEach(function (value2) {
+    for (const value1 of param1Inputs) {
+      for (const value2 of param2Inputs) {
         result.push({
-          value1: value1,
-          value2: value2,
+          value1,
+          value2,
         });
-      });
-    });
+      }
+    }
 
     return result;
   }
 
   // when adding solutions to the results, simply remove them
   // from pending combinations after all slots are covered
-  function addSolution(solution: ResultConfiguration<Config>) {
+  function addSolution(solution: ResultConfiguration<Config>): void {
     combinations = combinations.filter(function (combination) {
       combination.uncovered = combination.uncovered.filter(function (uncovered) {
         if (
@@ -101,9 +97,9 @@ export function pairwise<Config extends ConfigurationMatrix>(
 
   // mark any solutions passed in as covered
   if (Array.isArray(include)) {
-    include.forEach(function (solution) {
+    for (const solution of include) {
       addSolution(solution);
-    });
+    }
   }
 
   while (combinations.length) {
@@ -131,17 +127,17 @@ export function pairwise<Config extends ConfigurationMatrix>(
       const candidates: SolutionItemCandidate[] = [];
 
       // any uncovered parameter is a candidate
-      inputKeys.forEach(function (param) {
-        if (solutionKeys.indexOf(param) === -1) {
-          inputs[param]?.forEach(function (value) {
+      for (const param of inputKeys) {
+        if (!solutionKeys.includes(param)) {
+          for (const value of inputs[param]!) {
             candidates.push({
-              param: param,
-              value: value,
+              param,
+              value,
               score: 0,
             });
-          });
+          }
         }
-      });
+      }
 
       let bestCandidate = candidates[0]!;
 
@@ -159,13 +155,13 @@ export function pairwise<Config extends ConfigurationMatrix>(
       };
 
       // find pairs that contain a parameter not in the solution
-      combinations.forEach(function (combination) {
-        const hasParam1 = solutionKeys.indexOf(combination.param1) !== -1;
-        const hasParam2 = solutionKeys.indexOf(combination.param2) !== -1;
+      for (const combination of combinations) {
+        const hasParam1 = !solutionKeys.includes(combination.param1);
+        const hasParam2 = !solutionKeys.includes(combination.param2);
 
         if (!hasParam1 || !hasParam2) {
           // filter uncovered combinations consistent with existing inputs from these pairs
-          combination.uncovered.forEach(function (uncovered) {
+          for (const uncovered of combination.uncovered) {
             if (hasParam1 && uncovered.value1 === solution[combination.param1]) {
               increment(combination.param2, uncovered.value2);
             } else if (hasParam2 && uncovered.value2 === solution[combination.param2]) {
@@ -174,9 +170,9 @@ export function pairwise<Config extends ConfigurationMatrix>(
               increment(combination.param1, uncovered.value1);
               increment(combination.param2, uncovered.value2);
             }
-          });
+          }
         }
-      });
+      }
 
       // pick a value that satisfies the most of these combinations
       solution[bestCandidate.param] = bestCandidate.value;
