@@ -47,8 +47,7 @@ function generateUncovered<Config extends ConfigurationMatrix>(
 
 // when adding solutions to the results, simply remove them
 // from pending combinations after all slots are covered
-function addSolution(
-  results: Array<Record<string, unknown>>,
+function updateUncoveredCombinations(
   combinations: Combination[],
   solution: Record<string, unknown>
 ): Combination[] {
@@ -67,7 +66,6 @@ function addSolution(
     return combination.uncovered.length > 0;
   });
 
-  results.push(solution);
   return remainingCombinations;
 }
 
@@ -80,22 +78,18 @@ function addSolution(
 // [ {rtl: true, layout: 'list'}, {rtl: true, layout: 'grid'}, ...]
 // The second argument provides an array of solutions that *must* be included in the output
 // more info: http://msdn.microsoft.com/en-us/library/cc150619.aspx
-export function pairwise<Config extends ConfigurationMatrix>(
+export function* pairwise<Config extends ConfigurationMatrix>(
   config: Config,
   include?: Array<ResultConfiguration<Config>>
-): Array<ResultConfiguration<Config>> {
-  const results: Array<ResultConfiguration<Config>> = [];
+): Iterable<ResultConfiguration<Config>> {
   const configKeys = Object.keys(config);
 
   let combinations: Combination[] = [];
 
   for (let i = 0; i < configKeys.length - 1; i++) {
     for (let j = i + 1; j < configKeys.length; j++) {
-      const param1 = configKeys[i];
-      const param2 = configKeys[j];
-      if (!param1 || !param2) {
-        continue;
-      }
+      const param1 = configKeys[i]!;
+      const param2 = configKeys[j]!;
       combinations.push({
         param1: param1,
         param2: param2,
@@ -107,7 +101,8 @@ export function pairwise<Config extends ConfigurationMatrix>(
   // mark any solutions passed in as covered
   if (Array.isArray(include)) {
     for (const solution of include) {
-      combinations = addSolution(results, combinations, solution);
+      combinations = updateUncoveredCombinations(combinations, solution);
+      yield solution;
     }
   }
 
@@ -189,8 +184,7 @@ export function pairwise<Config extends ConfigurationMatrix>(
     }
 
     // remove what is covered by the new solution
-    combinations = addSolution(results, combinations, solution);
+    combinations = updateUncoveredCombinations(combinations, solution);
+    yield solution as ResultConfiguration<Config>;
   }
-
-  return results;
 }
