@@ -108,11 +108,7 @@ export function* pairwise<Config extends ConfigurationMatrix>(
 
   while (combinations.length) {
     // take first combination from pair with most uncovered slots
-    const mostUncoveredPair = combinations.reduce(function (previous, current) {
-      if (previous === null) {
-        return current;
-      }
-
+    const mostUncoveredPair = combinations.reduce((previous, current) => {
       if (previous.uncovered.length >= current.uncovered.length) {
         return previous;
       } else {
