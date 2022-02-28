@@ -106,15 +106,14 @@ export function* pairwise<Config extends ConfigurationMatrix>(
     }
   }
 
-  while (combinations.length) {
+  while (combinations[0]) {
     // take first combination from pair with most uncovered slots
-    const mostUncoveredPair = combinations.reduce((previous, current) => {
-      if (previous.uncovered.length >= current.uncovered.length) {
-        return previous;
-      } else {
-        return current;
+    let mostUncoveredPair = combinations[0];
+    for (const combination of combinations) {
+      if (combination.uncovered.length > mostUncoveredPair.uncovered.length) {
+        mostUncoveredPair = combination;
       }
-    });
+    }
 
     const solution: Record<string, unknown> = {};
     const combination = mostUncoveredPair.uncovered[0]!;
@@ -122,13 +121,13 @@ export function* pairwise<Config extends ConfigurationMatrix>(
     solution[mostUncoveredPair.param2] = combination.value2;
 
     // while not all parameters are in the solution yet
-    let solutionKeys = Object.keys(solution);
-    while (solutionKeys.length < configKeys.length) {
+    const solutionKeys = new Set<string>(Object.keys(solution));
+    while (solutionKeys.size < configKeys.length) {
       const candidates: SolutionItemCandidate[] = [];
 
       // any uncovered parameter is a candidate
       for (const param of configKeys) {
-        if (!solutionKeys.includes(param)) {
+        if (!solutionKeys.has(param)) {
           for (const value of config[param]!) {
             candidates.push({
               param,
@@ -155,8 +154,8 @@ export function* pairwise<Config extends ConfigurationMatrix>(
 
       // find pairs that contain a parameter not in the solution
       for (const combination of combinations) {
-        const hasParam1 = !solutionKeys.includes(combination.param1);
-        const hasParam2 = !solutionKeys.includes(combination.param2);
+        const hasParam1 = !solutionKeys.has(combination.param1);
+        const hasParam2 = !solutionKeys.has(combination.param2);
 
         if (!hasParam1 || !hasParam2) {
           // filter uncovered combinations consistent with existing inputs from these pairs
@@ -175,7 +174,7 @@ export function* pairwise<Config extends ConfigurationMatrix>(
 
       // pick a value that satisfies the most of these combinations
       solution[bestCandidate.param] = bestCandidate.value;
-      solutionKeys = Object.keys(solution);
+      solutionKeys.add(bestCandidate.param);
     }
 
     // remove what is covered by the new solution
