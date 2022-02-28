@@ -24,17 +24,11 @@ interface SolutionItemCandidate {
 }
 
 // generate value combinations of all input values for each pair
-function generateUncovered<Config extends ConfigurationMatrix>(
-  config: Config,
-  param1: string,
-  param2: string
-): UncoveredItem[] {
-  const param1Values = config[param1] ?? [];
-  const param2Values = config[param2] ?? [];
+function generateUncovered(firstArray: unknown[], secondArray: unknown[]): UncoveredItem[] {
   const result: UncoveredItem[] = [];
 
-  for (const value1 of param1Values) {
-    for (const value2 of param2Values) {
+  for (const value1 of firstArray) {
+    for (const value2 of secondArray) {
       result.push({
         value1,
         value2,
@@ -86,13 +80,13 @@ export function* pairwise<Config extends ConfigurationMatrix>(
 
   let combinations: Combination[] = [];
 
-  for (const [param1] of configEntries) {
-    for (const [param2] of configEntries) {
+  for (const [param1, values1] of configEntries) {
+    for (const [param2, values2] of configEntries) {
       if (param1 !== param2) {
         combinations.push({
           param1,
           param2,
-          uncovered: generateUncovered(config, param1, param2),
+          uncovered: generateUncovered(values1, values2),
         });
       }
     }
