@@ -82,16 +82,16 @@ export function* pairwise<Config extends ConfigurationMatrix>(
   config: Config,
   include?: Array<ResultConfiguration<Config>>
 ): Iterable<ResultConfiguration<Config>> {
-  const configKeys = Object.keys(config);
+  const configEntries = Object.entries(config);
 
   let combinations: Combination[] = [];
 
-  for (const param1 of configKeys) {
-    for (const param2 of configKeys) {
+  for (const [param1] of configEntries) {
+    for (const [param2] of configEntries) {
       if (param1 !== param2) {
         combinations.push({
-          param1: param1,
-          param2: param2,
+          param1,
+          param2,
           uncovered: generateUncovered(config, param1, param2),
         });
       }
@@ -122,13 +122,13 @@ export function* pairwise<Config extends ConfigurationMatrix>(
 
     // while not all parameters are in the solution yet
     const solutionKeys = new Set<string>(Object.keys(solution));
-    while (solutionKeys.size < configKeys.length) {
+    while (solutionKeys.size < configEntries.length) {
       const candidates: SolutionItemCandidate[] = [];
 
       // any uncovered parameter is a candidate
-      for (const param of configKeys) {
+      for (const [param, values] of configEntries) {
         if (!solutionKeys.has(param)) {
-          for (const value of config[param]!) {
+          for (const value of values) {
             candidates.push({
               param,
               value,
