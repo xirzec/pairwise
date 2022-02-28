@@ -17,10 +17,47 @@ interface Combination {
   uncovered: UncoveredItem[];
 }
 
-interface SolutionItemCandidate {
-  param: string;
-  value: unknown;
-  score: number;
+interface SolutionItemCandidateMap {
+  add(param: string, value: unknown): void;
+  increment(param: string, value: unknown): void;
+  getBestCandidate(): { param: string; value: unknown };
+}
+
+function createItemCandidateMap(): SolutionItemCandidateMap {
+  const candidateMap = new Map<string, Map<unknown, number>>();
+  let bestCandidate: { param: string; value: unknown; score: number };
+  return {
+    add(param: string, value: unknown): void {
+      let paramMap = candidateMap.get(param);
+      if (!paramMap) {
+        paramMap = new Map<unknown, number>();
+        candidateMap.set(param, paramMap);
+      }
+      if (!paramMap.has(value)) {
+        paramMap.set(value, 0);
+      }
+      if (!bestCandidate) {
+        bestCandidate = { param, value, score: 0 };
+      }
+    },
+    increment(param: string, value: unknown): void {
+      const paramMap = candidateMap.get(param);
+      const score = paramMap?.get(value);
+      if (paramMap && score !== undefined) {
+        const newScore = score + 1;
+        paramMap.set(value, newScore);
+        if (newScore > bestCandidate.score) {
+          bestCandidate = { param, value, score: newScore };
+        }
+      }
+    },
+    getBestCandidate(): { param: string; value: unknown } {
+      if (!bestCandidate) {
+        throw new Error("Map is empty, can't compute best candidate!");
+      }
+      return bestCandidate;
+    },
+  };
 }
 
 // generate value combinations of all input values for each pair
@@ -117,34 +154,16 @@ export function* pairwise<Config extends ConfigurationMatrix>(
     // while not all parameters are in the solution yet
     const solutionKeys = new Set<string>(Object.keys(solution));
     while (solutionKeys.size < configEntries.length) {
-      const candidates: SolutionItemCandidate[] = [];
+      const candidates = createItemCandidateMap();
 
       // any uncovered parameter is a candidate
       for (const [param, values] of configEntries) {
         if (!solutionKeys.has(param)) {
           for (const value of values) {
-            candidates.push({
-              param,
-              value,
-              score: 0,
-            });
+            candidates.add(param, value);
           }
         }
       }
-
-      let bestCandidate = candidates[0]!;
-
-      const increment = function (param: string, value: unknown) {
-        const candidate = candidates.find((c) => {
-          return c.param === param && c.value === value;
-        });
-        if (candidate) {
-          candidate.score++;
-          if (candidate.score > bestCandidate.score) {
-            bestCandidate = candidate;
-          }
-        }
-      };
 
       // find pairs that contain a parameter not in the solution
       for (const combination of combinations) {
@@ -155,17 +174,18 @@ export function* pairwise<Config extends ConfigurationMatrix>(
           // filter uncovered combinations consistent with existing inputs from these pairs
           for (const uncovered of combination.uncovered) {
             if (hasParam1 && uncovered.value1 === solution[combination.param1]) {
-              increment(combination.param2, uncovered.value2);
+              candidates.increment(combination.param2, uncovered.value2);
             } else if (hasParam2 && uncovered.value2 === solution[combination.param2]) {
-              increment(combination.param1, uncovered.value1);
+              candidates.increment(combination.param1, uncovered.value1);
             } else {
-              increment(combination.param1, uncovered.value1);
-              increment(combination.param2, uncovered.value2);
+              candidates.increment(combination.param1, uncovered.value1);
+              candidates.increment(combination.param2, uncovered.value2);
             }
           }
         }
       }
 
+      const bestCandidate = candidates.getBestCandidate();
       // pick a value that satisfies the most of these combinations
       solution[bestCandidate.param] = bestCandidate.value;
       solutionKeys.add(bestCandidate.param);
