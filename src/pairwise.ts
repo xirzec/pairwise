@@ -86,15 +86,15 @@ export function* pairwise<Config extends ConfigurationMatrix>(
 
   let combinations: Combination[] = [];
 
-  for (let i = 0; i < configKeys.length - 1; i++) {
-    for (let j = i + 1; j < configKeys.length; j++) {
-      const param1 = configKeys[i]!;
-      const param2 = configKeys[j]!;
-      combinations.push({
-        param1: param1,
-        param2: param2,
-        uncovered: generateUncovered(config, param1, param2),
-      });
+  for (const param1 of configKeys) {
+    for (const param2 of configKeys) {
+      if (param1 !== param2) {
+        combinations.push({
+          param1: param1,
+          param2: param2,
+          uncovered: generateUncovered(config, param1, param2),
+        });
+      }
     }
   }
 
