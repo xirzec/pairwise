@@ -26,9 +26,13 @@ export function createCombinationMap(configEntries: Array<[string, unknown[]]>):
   let combinations: Combination[] = [];
   let mostUncoveredPair: Combination | undefined = undefined;
 
-  for (const [param1, values1] of configEntries) {
-    for (const [param2, values2] of configEntries) {
-      if (param1 !== param2) {
+  for (let i = 0; i < configEntries.length - 1; i++) {
+    for (let j = i + 1; j < configEntries.length; j++) {
+      const entry1 = configEntries[i];
+      const entry2 = configEntries[j];
+      if (entry1 && entry2) {
+        const [param1, values1] = entry1;
+        const [param2, values2] = entry2;
         const newCombination = {
           param1,
           param2,
@@ -44,6 +48,7 @@ export function createCombinationMap(configEntries: Array<[string, unknown[]]>):
       }
     }
   }
+
   return {
     getBestPartialSolution(): Map<string, unknown> {
       const solution = new Map<string, unknown>();
