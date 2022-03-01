@@ -80,13 +80,13 @@ function generateUncovered(firstArray: unknown[], secondArray: unknown[]): Uncov
 // from pending combinations after all slots are covered
 function updateUncoveredCombinations(
   combinations: Combination[],
-  solution: Record<string, unknown>
+  solution: Map<string, unknown>
 ): Combination[] {
   const remainingCombinations = combinations.filter(function (combination) {
     combination.uncovered = combination.uncovered.filter(function (uncovered) {
       if (
-        solution[combination.param1] === uncovered.value1 &&
-        solution[combination.param2] === uncovered.value2
+        solution.get(combination.param1) === uncovered.value1 &&
+        solution.get(combination.param2) === uncovered.value2
       ) {
         // remove combinations now covered
         return false;
@@ -132,7 +132,7 @@ export function* pairwise<Config extends ConfigurationMatrix>(
   // mark any solutions passed in as covered
   if (Array.isArray(include)) {
     for (const solution of include) {
-      combinations = updateUncoveredCombinations(combinations, solution);
+      combinations = updateUncoveredCombinations(combinations, new Map(Object.entries(solution)));
       yield solution;
     }
   }
@@ -146,19 +146,18 @@ export function* pairwise<Config extends ConfigurationMatrix>(
       }
     }
 
-    const solution: Record<string, unknown> = {};
+    const solution = new Map<string, unknown>();
     const combination = mostUncoveredPair.uncovered[0]!;
-    solution[mostUncoveredPair.param1] = combination.value1;
-    solution[mostUncoveredPair.param2] = combination.value2;
+    solution.set(mostUncoveredPair.param1, combination.value1);
+    solution.set(mostUncoveredPair.param2, combination.value2);
 
     // while not all parameters are in the solution yet
-    const solutionKeys = new Set<string>(Object.keys(solution));
-    while (solutionKeys.size < configEntries.length) {
+    while (solution.size < configEntries.length) {
       const candidates = createItemCandidateMap();
 
       // any uncovered parameter is a candidate
       for (const [param, values] of configEntries) {
-        if (!solutionKeys.has(param)) {
+        if (!solution.has(param)) {
           for (const value of values) {
             candidates.add(param, value);
           }
@@ -167,15 +166,15 @@ export function* pairwise<Config extends ConfigurationMatrix>(
 
       // find pairs that contain a parameter not in the solution
       for (const combination of combinations) {
-        const hasParam1 = !solutionKeys.has(combination.param1);
-        const hasParam2 = !solutionKeys.has(combination.param2);
+        const hasParam1 = !solution.has(combination.param1);
+        const hasParam2 = !solution.has(combination.param2);
 
         if (!hasParam1 || !hasParam2) {
           // filter uncovered combinations consistent with existing inputs from these pairs
           for (const uncovered of combination.uncovered) {
-            if (hasParam1 && uncovered.value1 === solution[combination.param1]) {
+            if (hasParam1 && uncovered.value1 === solution.get(combination.param1)) {
               candidates.increment(combination.param2, uncovered.value2);
-            } else if (hasParam2 && uncovered.value2 === solution[combination.param2]) {
+            } else if (hasParam2 && uncovered.value2 === solution.get(combination.param2)) {
               candidates.increment(combination.param1, uncovered.value1);
             } else {
               candidates.increment(combination.param1, uncovered.value1);
@@ -187,8 +186,7 @@ export function* pairwise<Config extends ConfigurationMatrix>(
 
       const bestCandidate = candidates.getBestCandidate();
       // pick a value that satisfies the most of these combinations
-      solution[bestCandidate.param] = bestCandidate.value;
-      solutionKeys.add(bestCandidate.param);
+      solution.set(bestCandidate.param, bestCandidate.value);
     }
 
     // remove what is covered by the new solution
