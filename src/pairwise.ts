@@ -59,7 +59,7 @@ export function* pairwise<Config extends ConfigurationMatrix>(
       }
 
       // find pairs that contain a parameter not in the solution
-      for (const combination of combinationMap.getUncoveredCombinations()) {
+      for (const combination of combinationMap) {
         const hasParam1 = !solution.has(combination.param1);
         const hasParam2 = !solution.has(combination.param2);
 

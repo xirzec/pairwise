@@ -9,11 +9,14 @@ export interface Combination {
   uncovered: UncoveredItem[];
 }
 
-export interface CombinationMap {
+export interface CombinationMap extends Iterable<Combination> {
   getBestPartialSolution(): Map<string, unknown>;
   markSolutionCovered(solution: Map<string, unknown>): void;
-  getUncoveredCombinations(): Combination[];
   isEmpty(): boolean;
+}
+
+function* combinationIterator(array: Combination[]): IterableIterator<Combination> {
+  yield* array;
 }
 
 export function createCombinationMap(configEntries: Array<[string, unknown[]]>): CombinationMap {
@@ -49,11 +52,11 @@ export function createCombinationMap(configEntries: Array<[string, unknown[]]>):
     markSolutionCovered(solution: Map<string, unknown>): void {
       combinations = updateUncoveredCombinations(combinations, solution);
     },
-    getUncoveredCombinations(): Combination[] {
-      return combinations;
-    },
     isEmpty(): boolean {
       return combinations.length === 0;
+    },
+    [Symbol.iterator](): Iterator<Combination> {
+      return combinationIterator(combinations);
     },
   };
 }
