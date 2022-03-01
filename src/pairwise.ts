@@ -1,3 +1,5 @@
+import { createItemCandidateMap } from "./candidateMap";
+
 export interface ConfigurationMatrix {
   [key: string]: unknown[];
 }
@@ -15,49 +17,6 @@ interface Combination {
   param1: string;
   param2: string;
   uncovered: UncoveredItem[];
-}
-
-interface SolutionItemCandidateMap {
-  add(param: string, value: unknown): void;
-  increment(param: string, value: unknown): void;
-  getBestCandidate(): { param: string; value: unknown };
-}
-
-function createItemCandidateMap(): SolutionItemCandidateMap {
-  const candidateMap = new Map<string, Map<unknown, number>>();
-  let bestCandidate: { param: string; value: unknown; score: number };
-  return {
-    add(param: string, value: unknown): void {
-      let paramMap = candidateMap.get(param);
-      if (!paramMap) {
-        paramMap = new Map<unknown, number>();
-        candidateMap.set(param, paramMap);
-      }
-      if (!paramMap.has(value)) {
-        paramMap.set(value, 0);
-      }
-      if (!bestCandidate) {
-        bestCandidate = { param, value, score: 0 };
-      }
-    },
-    increment(param: string, value: unknown): void {
-      const paramMap = candidateMap.get(param);
-      const score = paramMap?.get(value);
-      if (paramMap && score !== undefined) {
-        const newScore = score + 1;
-        paramMap.set(value, newScore);
-        if (newScore > bestCandidate.score) {
-          bestCandidate = { param, value, score: newScore };
-        }
-      }
-    },
-    getBestCandidate(): { param: string; value: unknown } {
-      if (!bestCandidate) {
-        throw new Error("Map is empty, can't compute best candidate!");
-      }
-      return bestCandidate;
-    },
-  };
 }
 
 // generate value combinations of all input values for each pair
