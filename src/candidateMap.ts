@@ -1,5 +1,5 @@
 export interface SolutionItemCandidateMap {
-  add(param: string, value: unknown): void;
+  add(param: string, values: unknown[]): void;
   increment(param: string, value: unknown): void;
   getBestCandidate(): { param: string; value: unknown };
 }
@@ -8,17 +8,19 @@ export function createItemCandidateMap(): SolutionItemCandidateMap {
   const candidateMap = new Map<string, Map<unknown, number>>();
   let bestCandidate: { param: string; value: unknown; score: number };
   return {
-    add(param: string, value: unknown): void {
+    add(param: string, values: unknown[]): void {
       let paramMap = candidateMap.get(param);
       if (!paramMap) {
         paramMap = new Map<unknown, number>();
         candidateMap.set(param, paramMap);
       }
-      if (!paramMap.has(value)) {
-        paramMap.set(value, 0);
-      }
-      if (!bestCandidate) {
-        bestCandidate = { param, value, score: 0 };
+      for (const value of values) {
+        if (!paramMap.has(value)) {
+          paramMap.set(value, 0);
+        }
+        if (!bestCandidate) {
+          bestCandidate = { param, value, score: 0 };
+        }
       }
     },
     increment(param: string, value: unknown): void {

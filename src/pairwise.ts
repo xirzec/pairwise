@@ -52,9 +52,7 @@ export function* pairwise<Config extends ConfigurationMatrix>(
       // any uncovered parameter is a candidate
       for (const [param, values] of configEntries) {
         if (!solution.has(param)) {
-          for (const value of values) {
-            candidates.add(param, value);
-          }
+          candidates.add(param, values);
         }
       }
 
