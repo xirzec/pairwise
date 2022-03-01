@@ -1,16 +1,11 @@
 import { createItemCandidateMap } from "./candidateMap";
 import { createCombinationMap } from "./combinationMap";
+import { ConfigurationMatrix, ResultConfiguration, ConfigurationValue } from "./interfaces";
 
-export interface ConfigurationMatrix {
-  [key: string]: unknown[];
-}
-
-export type ResultConfiguration<Config extends ConfigurationMatrix> = {
-  [key in keyof Config]: Config[key][number];
-};
-
-function solutionToObject(solution: Map<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
+function solutionToObject(
+  solution: Map<string, ConfigurationValue>
+): Record<string, ConfigurationValue> {
+  const result: Record<string, ConfigurationValue> = {};
   for (const [key, value] of solution) {
     result[key] = value;
   }

@@ -1,6 +1,8 @@
+import { ConfigurationValue } from "./interfaces";
+
 export interface UncoveredItem {
-  value1: unknown;
-  value2: unknown;
+  value1: ConfigurationValue;
+  value2: ConfigurationValue;
 }
 
 export interface Combination {
@@ -10,8 +12,8 @@ export interface Combination {
 }
 
 export interface CombinationMap extends Iterable<Combination> {
-  getBestPartialSolution(): Map<string, unknown>;
-  markSolutionCovered(solution: Map<string, unknown>): void;
+  getBestPartialSolution(): Map<string, ConfigurationValue>;
+  markSolutionCovered(solution: Map<string, ConfigurationValue>): void;
   isEmpty(): boolean;
 }
 
@@ -19,7 +21,9 @@ function* combinationIterator(array: Combination[]): IterableIterator<Combinatio
   yield* array;
 }
 
-export function createCombinationMap(configEntries: Array<[string, unknown[]]>): CombinationMap {
+export function createCombinationMap(
+  configEntries: Array<[string, ConfigurationValue[]]>
+): CombinationMap {
   if (configEntries.length === 0) {
     throw new RangeError("Can't create combination map without entries");
   }
@@ -50,8 +54,8 @@ export function createCombinationMap(configEntries: Array<[string, unknown[]]>):
   }
 
   return {
-    getBestPartialSolution(): Map<string, unknown> {
-      const solution = new Map<string, unknown>();
+    getBestPartialSolution(): Map<string, ConfigurationValue> {
+      const solution = new Map<string, ConfigurationValue>();
       // take first combination from pair with most uncovered slots
       const combination = mostUncoveredPair?.uncovered[0];
       if (mostUncoveredPair && combination) {
@@ -60,7 +64,7 @@ export function createCombinationMap(configEntries: Array<[string, unknown[]]>):
       }
       return solution;
     },
-    markSolutionCovered(solution: Map<string, unknown>): void {
+    markSolutionCovered(solution: Map<string, ConfigurationValue>): void {
       // when adding solutions to the results, simply remove them
       // from pending combinations after all slots are covered
 
@@ -98,7 +102,10 @@ export function createCombinationMap(configEntries: Array<[string, unknown[]]>):
 }
 
 // generate value combinations of all input values for each pair
-function generateUncovered(firstArray: unknown[], secondArray: unknown[]): UncoveredItem[] {
+function generateUncovered(
+  firstArray: ConfigurationValue[],
+  secondArray: ConfigurationValue[]
+): UncoveredItem[] {
   const result: UncoveredItem[] = [];
 
   for (const value1 of firstArray) {
