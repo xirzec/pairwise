@@ -1,5 +1,5 @@
 import { createItemCandidateMap } from "./candidateMap";
-import { createCombinationMap } from "./coverageMap";
+import { createCombinationMap } from "./combinationMap";
 
 export interface ConfigurationMatrix {
   [key: string]: unknown[];
