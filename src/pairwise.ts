@@ -1,5 +1,5 @@
 import { createItemCandidateMap } from "./candidateMap";
-import { Combination, generateUncovered, updateUncoveredCombinations } from "./coverageMap";
+import { createCombinationMap } from "./coverageMap";
 
 export interface ConfigurationMatrix {
   [key: string]: unknown[];
@@ -32,41 +32,18 @@ export function* pairwise<Config extends ConfigurationMatrix>(
 ): Iterable<ResultConfiguration<Config>> {
   const configEntries = Object.entries(config);
 
-  let combinations: Combination[] = [];
-
-  for (const [param1, values1] of configEntries) {
-    for (const [param2, values2] of configEntries) {
-      if (param1 !== param2) {
-        combinations.push({
-          param1,
-          param2,
-          uncovered: generateUncovered(values1, values2),
-        });
-      }
-    }
-  }
+  const combinationMap = createCombinationMap(configEntries);
 
   // mark any solutions passed in as covered
   if (Array.isArray(include)) {
     for (const solution of include) {
-      combinations = updateUncoveredCombinations(combinations, new Map(Object.entries(solution)));
+      combinationMap.markSolutionCovered(new Map(Object.entries(solution)));
       yield solution;
     }
   }
 
-  while (combinations[0]) {
-    // take first combination from pair with most uncovered slots
-    let mostUncoveredPair = combinations[0];
-    for (const combination of combinations) {
-      if (combination.uncovered.length > mostUncoveredPair.uncovered.length) {
-        mostUncoveredPair = combination;
-      }
-    }
-
-    const solution = new Map<string, unknown>();
-    const combination = mostUncoveredPair.uncovered[0]!;
-    solution.set(mostUncoveredPair.param1, combination.value1);
-    solution.set(mostUncoveredPair.param2, combination.value2);
+  while (!combinationMap.isEmpty()) {
+    const solution = combinationMap.getBestPartialSolution();
 
     // while not all parameters are in the solution yet
     while (solution.size < configEntries.length) {
@@ -82,7 +59,7 @@ export function* pairwise<Config extends ConfigurationMatrix>(
       }
 
       // find pairs that contain a parameter not in the solution
-      for (const combination of combinations) {
+      for (const combination of combinationMap.getUncoveredCombinations()) {
         const hasParam1 = !solution.has(combination.param1);
         const hasParam2 = !solution.has(combination.param2);
 
@@ -107,7 +84,7 @@ export function* pairwise<Config extends ConfigurationMatrix>(
     }
 
     // remove what is covered by the new solution
-    combinations = updateUncoveredCombinations(combinations, solution);
+    combinationMap.markSolutionCovered(solution);
     yield solutionToObject(solution) as ResultConfiguration<Config>;
   }
 }

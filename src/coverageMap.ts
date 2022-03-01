@@ -9,8 +9,57 @@ export interface Combination {
   uncovered: UncoveredItem[];
 }
 
+export interface CombinationMap {
+  getBestPartialSolution(): Map<string, unknown>;
+  markSolutionCovered(solution: Map<string, unknown>): void;
+  getUncoveredCombinations(): Combination[];
+  isEmpty(): boolean;
+}
+
+export function createCombinationMap(configEntries: Array<[string, unknown[]]>): CombinationMap {
+  let combinations: Combination[] = [];
+
+  for (const [param1, values1] of configEntries) {
+    for (const [param2, values2] of configEntries) {
+      if (param1 !== param2) {
+        combinations.push({
+          param1,
+          param2,
+          uncovered: generateUncovered(values1, values2),
+        });
+      }
+    }
+  }
+  return {
+    getBestPartialSolution(): Map<string, unknown> {
+      // take first combination from pair with most uncovered slots
+      let mostUncoveredPair = combinations[0]!;
+      for (const combination of combinations) {
+        if (combination.uncovered.length > mostUncoveredPair.uncovered.length) {
+          mostUncoveredPair = combination;
+        }
+      }
+
+      const solution = new Map<string, unknown>();
+      const combination = mostUncoveredPair.uncovered[0]!;
+      solution.set(mostUncoveredPair.param1, combination.value1);
+      solution.set(mostUncoveredPair.param2, combination.value2);
+      return solution;
+    },
+    markSolutionCovered(solution: Map<string, unknown>): void {
+      combinations = updateUncoveredCombinations(combinations, solution);
+    },
+    getUncoveredCombinations(): Combination[] {
+      return combinations;
+    },
+    isEmpty(): boolean {
+      return combinations.length === 0;
+    },
+  };
+}
+
 // generate value combinations of all input values for each pair
-export function generateUncovered(firstArray: unknown[], secondArray: unknown[]): UncoveredItem[] {
+function generateUncovered(firstArray: unknown[], secondArray: unknown[]): UncoveredItem[] {
   const result: UncoveredItem[] = [];
 
   for (const value1 of firstArray) {
@@ -27,7 +76,7 @@ export function generateUncovered(firstArray: unknown[], secondArray: unknown[])
 
 // when adding solutions to the results, simply remove them
 // from pending combinations after all slots are covered
-export function updateUncoveredCombinations(
+function updateUncoveredCombinations(
   combinations: Combination[],
   solution: Map<string, unknown>
 ): Combination[] {
